@@ -51,59 +51,35 @@
 #             "What is the time complexity of binary search?"
 #         ]
 
-import google.generativeai as genai
+
+from groq import Groq
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(".env")
 
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
+print("API KEY =", os.getenv("GROQ_API_KEY"))
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
-model = genai.GenerativeModel("gemini-2.0-flash")
-
-
 def generate_questions(resume_text):
-
     prompt = f"""
-You are a technical interviewer.
+    Based on this resume, generate 6 interview questions.
 
-Analyze this resume and generate exactly 6 personalized interview questions.
+    Resume:
+    {resume_text}
+    """
 
-Resume:
-{resume_text}
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
 
-Rules:
-- Questions must be based on projects, skills and technologies mentioned.
-- Avoid generic definition questions.
-- Make questions practical and interview-oriented.
-- Return only the questions.
-"""
+    text = response.choices[0].message.content
 
-    try:
-        response = model.generate_content(prompt)
-
-        questions = []
-
-        for line in response.text.split("\n"):
-            line = line.strip()
-
-            if line:
-                questions.append(
-                    line.lstrip("1234567890.- ")
-                )
-
-        return questions[:6]
-
-    except Exception as e:
-        print("Gemini Error:", e)
-
-        return [
-            "Describe one project from your resume and explain your role.",
-            "What was the biggest technical challenge you faced?",
-            "Which technology mentioned in your resume are you most confident with?",
-            "How would you improve one of your past projects?",
-            "Explain a problem you solved using programming.",
-            "What new skill are you currently learning?"
+    return [q.strip() for q in text.split("\n") if q.strip()]
         ]
