@@ -1,40 +1,34 @@
-import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(".env")
 
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
-model = genai.GenerativeModel("gemini-2.0-flash")
-
 def evaluate_answer(question, answer):
-
     prompt = f"""
-    You are a technical interviewer.
+    Evaluate this interview answer.
 
-    Question:
-    {question}
+    Question: {question}
 
-    Candidate Answer:
-    {answer}
+    Answer: {answer}
 
-    Evaluate the answer based on:
-    1. Technical accuracy
-    2. Completeness
-    3. Clarity
+    Give:
+    Score out of 10
+    Short feedback
 
-    Give output exactly in this format:
-
-    Score: X/10
-    Feedback: <short feedback>
+    Format:
+    8/10 - Good answer with relevant details
     """
 
-    try:
-        response = model.generate_content(prompt)
-        return response.text
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
 
-    except Exception as e:
-        return f"5/10 - Error: {e}"
+    return response.choices[0].message.content
